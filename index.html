@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Great Trapeze</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rye&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --tent-dark: #1a0e12;
+    --tent-shadow: #2a151b;
+    --red: #b3232f;
+    --red-deep: #7d141d;
+    --gold: #e8b34a;
+    --gold-bright: #f7d488;
+    --cream: #f3e6c8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    background: var(--tent-dark);
+    overflow: hidden;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    color: var(--cream);
+  }
+
+  #stage {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  canvas {
+    display: block;
+    image-rendering: auto;
+  }
+
+  /* ---- Overlays ---- */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    background: radial-gradient(ellipse at center, rgba(40,20,26,0.55) 0%, rgba(15,8,11,0.92) 100%);
+    z-index: 10;
+  }
+  .overlay.hidden { display: none; }
+
+  .welcome {
+    font-family: 'Rye', 'Georgia', serif;
+    font-size: clamp(1.1rem, 3.4vw, 1.9rem);
+    color: var(--red);
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+    margin-bottom: 1.1rem;
+    text-shadow:
+      0 0 10px rgba(232,179,74,0.3),
+      0 2px 0 var(--gold),
+      0 3px 8px rgba(0,0,0,0.5);
+  }
+
+  .title-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(0.5rem, 3vw, 2rem);
+  }
+  .clown-face {
+    width: clamp(48px, 11vw, 92px);
+    height: clamp(48px, 11vw, 92px);
+    flex: none;
+    filter: drop-shadow(0 3px 8px rgba(0,0,0,0.5));
+    animation: bobface 2.4s ease-in-out infinite;
+  }
+  .title-row .clown-face:last-child { animation-delay: 1.2s; }
+  @keyframes bobface {
+    0%, 100% { transform: translateY(0) rotate(-4deg); }
+    50% { transform: translateY(-6px) rotate(4deg); }
+  }
+
+  .marquee {
+    font-size: clamp(2.6rem, 9vw, 6.5rem);
+    line-height: 0.95;
+    letter-spacing: 0.04em;
+    font-weight: 700;
+    color: var(--gold);
+    text-shadow:
+      0 0 18px rgba(232,179,74,0.35),
+      0 4px 0 var(--red-deep),
+      0 6px 14px rgba(0,0,0,0.6);
+    text-transform: uppercase;
+  }
+  .marquee .the {
+    display: block;
+    font-size: 0.32em;
+    letter-spacing: 0.55em;
+    color: var(--cream);
+    text-shadow: none;
+    margin-bottom: 0.4em;
+    margin-right: -0.55em;
+  }
+
+  .ornament {
+    color: var(--red);
+    font-size: clamp(1rem, 3vw, 1.6rem);
+    letter-spacing: 0.4em;
+    margin: 1.4rem 0 1.8rem;
+    opacity: 0.85;
+  }
+
+  .billing {
+    font-style: italic;
+    color: var(--cream);
+    opacity: 0.78;
+    font-size: clamp(0.9rem, 2.4vw, 1.15rem);
+    max-width: 32ch;
+    line-height: 1.5;
+    margin-bottom: 2.4rem;
+  }
+
+  .prompt {
+    display: inline-block;
+    border: 2px solid var(--gold);
+    color: var(--gold-bright);
+    padding: 0.7rem 1.6rem;
+    font-size: clamp(0.85rem, 2.4vw, 1.05rem);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    border-radius: 2px;
+    background: rgba(125,20,29,0.25);
+    animation: pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(232,179,74,0); opacity: 0.85; }
+    50% { box-shadow: 0 0 22px 2px rgba(232,179,74,0.35); opacity: 1; }
+  }
+
+  .gameover-title {
+    font-size: clamp(1rem, 3.5vw, 2rem);
+    color: var(--cream);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    text-shadow: 0 3px 10px rgba(0,0,0,0.6);
+  }
+  .credit {
+    margin-top: 1.6rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    color: var(--cream);
+    opacity: 0.45;
+    font-style: italic;
+  }
+  .score-readout {
+    margin: 1.6rem 0;
+    line-height: 1.8;
+  }
+  .score-readout .rank {
+    font-family: 'Rye', 'Georgia', serif;
+    font-size: clamp(1.4rem, 5vw, 2.6rem);
+    color: var(--red);
+    letter-spacing: 0.03em;
+    margin-bottom: 0.5rem;
+    text-shadow:
+      0 0 12px rgba(232,179,74,0.35),
+      0 2px 0 var(--gold),
+      0 3px 8px rgba(0,0,0,0.5);
+  }
+  .score-readout .stars {
+    font-size: clamp(1.3rem, 4.5vw, 2rem);
+    color: var(--gold);
+    letter-spacing: 0.15em;
+    margin-bottom: 0.3rem;
+    text-shadow: 0 0 12px rgba(232,179,74,0.45);
+  }
+  .score-readout .flavor {
+    font-style: italic;
+    font-size: clamp(0.85rem, 2.6vw, 1.05rem);
+    color: var(--cream);
+    opacity: 0.85;
+    margin-top: 0.4rem;
+  }
+  .score-readout .big {
+    font-size: clamp(2.4rem, 8vw, 4.5rem);
+    color: var(--gold);
+    font-weight: 700;
+    display: block;
+    text-shadow: 0 0 16px rgba(232,179,74,0.3);
+  }
+  .score-readout .label {
+    font-size: 0.8rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+  .score-readout .high {
+    font-size: clamp(1rem, 3vw, 1.4rem);
+    color: var(--cream);
+    opacity: 0.85;
+  }
+  .new-best {
+    color: var(--gold-bright);
+    font-style: italic;
+    letter-spacing: 0.1em;
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .prompt, .new-best, .clown-face { animation: none; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="game"></canvas>
+
+  <div id="titleScreen" class="overlay">
+    <p class="welcome">Welcome to Elmer's Big Top Show!</p>
+    <div class="title-row">
+      <svg class="clown-face" viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="55" r="30" fill="#f6d9c0"/>
+        <path d="M50 18 Q30 22 26 40 Q40 30 50 32 Q60 30 74 40 Q70 22 50 18Z" fill="#e8b34a"/>
+        <circle cx="20" cy="42" r="9" fill="#e8b34a"/>
+        <circle cx="80" cy="42" r="9" fill="#e8b34a"/>
+        <circle cx="40" cy="50" r="5" fill="#231a1f"/>
+        <circle cx="60" cy="50" r="5" fill="#231a1f"/>
+        <circle cx="41.5" cy="48.5" r="1.6" fill="#fff"/>
+        <circle cx="61.5" cy="48.5" r="1.6" fill="#fff"/>
+        <circle cx="50" cy="62" r="7" fill="#c0303a"/>
+        <path d="M34 70 Q50 86 66 70" fill="none" stroke="#c0303a" stroke-width="4" stroke-linecap="round"/>
+      </svg>
+      <h1 class="marquee"><span class="the">The Great</span>Trapeze</h1>
+      <svg class="clown-face" viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="55" r="30" fill="#f6d9c0"/>
+        <path d="M26 30 L50 26 L74 30 L66 44 Q50 36 34 44 Z" fill="#27c4c4"/>
+        <circle cx="22" cy="40" r="9" fill="#27c4c4"/>
+        <circle cx="78" cy="40" r="9" fill="#27c4c4"/>
+        <path d="M34 48 Q40 44 46 48" fill="none" stroke="#231a1f" stroke-width="3.5" stroke-linecap="round"/>
+        <path d="M54 48 Q60 44 66 48" fill="none" stroke="#231a1f" stroke-width="3.5" stroke-linecap="round"/>
+        <circle cx="40" cy="52" r="3.5" fill="#231a1f"/>
+        <circle cx="60" cy="52" r="3.5" fill="#231a1f"/>
+        <circle cx="50" cy="62" r="7" fill="#c0303a"/>
+        <path d="M36 68 Q50 82 64 68" fill="none" stroke="#c0303a" stroke-width="4" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="ornament">&#9670; &nbsp; &#9670; &nbsp; &#9670;</div>
+    <p class="billing">Angela soars beneath the big top. Time each release and let her fly from bar to bar.</p>
+    <span class="prompt">Press Space to Begin</span>
+  </div>
+
+  <div id="gameOverScreen" class="overlay hidden">
+    <h2 class="gameover-title">Final Score</h2>
+    <div class="score-readout">
+      <div class="rank" id="finalRank">Novice</div>
+      <div class="stars" id="finalStars">★★★☆☆</div>
+      <span class="big" id="finalScore">0</span>
+      <span class="label">Catches</span>
+      <div class="high" id="finalHigh">High Score: 0</div>
+      <div class="flavor" id="finalFlavor">A fine flight under the lights.</div>
+      <div class="new-best hidden" id="newBest">A new record!</div>
+    </div>
+    <span class="prompt">Press R to Restart</span>
+    <p class="credit">© 2026 Elmer Yglesias · Ver. 1.0</p>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------- Setup ----------
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+  const titleScreen = document.getElementById("titleScreen");
+  const gameOverScreen = document.getElementById("gameOverScreen");
+  const finalScoreEl = document.getElementById("finalScore");
+  const finalHighEl = document.getElementById("finalHigh");
+  const finalRankEl = document.getElementById("finalRank");
+  const finalStarsEl = document.getElementById("finalStars");
+  const finalFlavorEl = document.getElementById("finalFlavor");
+  const newBestEl = document.getElementById("newBest");
+
+  // Logical resolution; we render in a fixed virtual space and scale to fit.
+  const VW = 900, VH = 600;
+  let scale = 1, offX = 0, offY = 0, dpr = 1;
+
+  function resize() {
+    dpr = window.devicePixelRatio || 1;
+    const w = window.innerWidth, h = window.innerHeight;
+    scale = Math.min(w / VW, h / VH);
+    const cssW = Math.round(VW * scale);
+    const cssH = Math.round(VH * scale);
+    canvas.style.width = cssW + "px";
+    canvas.style.height = cssH + "px";
+    canvas.width = Math.round(cssW * dpr);
+    canvas.height = Math.round(cssH * dpr);
+    offX = 0; offY = 0;
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  // ---------- Constants ----------
+  const GRAVITY = 1100;          // px/s^2, applied to the swing pendulum
+  const FLIGHT_GRAVITY = 1300;   // heavy air gravity -> a short, snappy hop
+  const ROPE_BASE = 150;         // base trapeze rope length
+  const FLOOR_Y = VH - 50;       // safety threshold line
+  const CEILING_Y = 70;          // where bars hang from
+  const CATCH_RADIUS = 42;       // distance for auto-catch
+  const LAUNCH_SPEED = 450;      // FIXED, low -> a short controlled burst, not a soar
+  const MAX_RELEASE_ANGLE = 0.45; // clamp release so she can't fling off the top
+  const TRAMP_W = (VW + 200) / 3;   // 1/3 the old full-width span
+  const TRAMP_Y = FLOOR_Y - 30;     // raised up off the floor so it stands out
+  const BOUNCE_SPEED = 1030;        // upward speed off the trampoline -> reaches bar height
+  const MAX_BOUNCES = 3;            // three saves, then the performance ends
+
+  // ---------- Audio (WebAudio, no assets) ----------
+  let actx = null;
+  function audio() {
+    if (!actx) {
+      try { actx = new (window.AudioContext || window.webkitAudioContext)(); }
+      catch (e) { actx = null; }
+    }
+    return actx;
+  }
+  function tone(freq, dur, type, gain, slideTo) {
+    const a = audio(); if (!a) return;
+    const o = a.createOscillator();
+    const g = a.createGain();
+    o.type = type || "sine";
+    o.frequency.setValueAtTime(freq, a.currentTime);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, a.currentTime + dur);
+    g.gain.setValueAtTime(0.0001, a.currentTime);
+    g.gain.exponentialRampToValueAtTime(gain || 0.15, a.currentTime + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + dur);
+    o.connect(g); g.connect(a.destination);
+    o.start(); o.stop(a.currentTime + dur + 0.02);
+  }
+  const sfx = {
+    swing: () => tone(220, 0.12, "sine", 0.06, 320),
+    catch: () => { tone(523, 0.10, "triangle", 0.14); setTimeout(() => tone(784, 0.12, "triangle", 0.12), 60); },
+    fall:  () => tone(300, 0.5, "sawtooth", 0.16, 70)
+  };
+
+  // ---------- Background music (decoded from embedded MIDI, synth-played) ----------
+  // Note data packed as gzipped base64: per note <uint16 delta-ms, uint16 dur-ms, uint8 pitch, uint8 vel>.
+  const SONG_B64 = "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";
+  const SONG_LOOP_MS = 95467;
+  let songNotes = null;      // decoded [ [startMs, durMs, midi, vel], ... ]
+  let musicOn = true;
+  let musicGain = null;      // master gain for music (kept low, behind SFX)
+  let musicTimer = null;
+  let loopStartTime = 0;     // audio-clock time the current loop began
+
+  function b64ToBytes(b64) {
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+  }
+
+  async function decodeSong() {
+    if (songNotes) return songNotes;
+    try {
+      const gz = b64ToBytes(SONG_B64);
+      let raw;
+      if (typeof DecompressionStream !== "undefined") {
+        const ds = new DecompressionStream("gzip");
+        const stream = new Response(new Blob([gz]).stream().pipeThrough(ds));
+        raw = new Uint8Array(await stream.arrayBuffer());
+      } else {
+        return null; // very old browser: skip music gracefully
+      }
+      const dv = new DataView(raw.buffer);
+      const notes = [];
+      let off = 0, t = 0;
+      while (off + 6 <= raw.byteLength) {
+        const delta = dv.getUint16(off, true);
+        const dur = dv.getUint16(off + 2, true);
+        const pitch = dv.getUint8(off + 4);
+        const vel = dv.getUint8(off + 5);
+        off += 6;
+        t += delta;
+        notes.push([t, dur, pitch, vel]);
+      }
+      songNotes = notes;
+      return notes;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function midiToFreq(n) { return 440 * Math.pow(2, (n - 69) / 12); }
+
+  // Play one note with a soft, mellow voice so it sits behind the SFX.
+  function playMusicNote(freq, when, durSec, vel) {
+    const a = actx; if (!a || !musicGain) return;
+    const o = a.createOscillator();
+    const g = a.createGain();
+    o.type = "triangle";              // warm, soft
+    o.frequency.setValueAtTime(freq, when);
+    const peak = 0.18 * (vel / 127);  // per-note level; master gain trims further
+    const d = Math.max(0.08, Math.min(durSec, 1.5));
+    g.gain.setValueAtTime(0.0001, when);
+    g.gain.exponentialRampToValueAtTime(peak, when + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + d);
+    o.connect(g); g.connect(musicGain);
+    o.start(when); o.stop(when + d + 0.05);
+  }
+
+  // Schedule the whole loop starting at audio-time `startAt`.
+  function scheduleLoop(startAt) {
+    if (!songNotes) return;
+    loopStartTime = startAt;
+    for (const [stMs, durMs, pitch, vel] of songNotes) {
+      playMusicNote(midiToFreq(pitch), startAt + stMs / 1000, durMs / 1000, vel);
+    }
+    // Queue the next loop slightly before this one ends.
+    const loopSec = SONG_LOOP_MS / 1000;
+    musicTimer = setTimeout(() => {
+      if (musicOn) scheduleLoop(loopStartTime + loopSec);
+    }, (loopSec - 0.2) * 1000);
+  }
+
+  async function startMusic() {
+    const a = audio(); if (!a) return;
+    if (a.state === "suspended") { try { await a.resume(); } catch (e) {} }
+    await decodeSong();
+    if (!songNotes) return;
+    if (!musicGain) {
+      musicGain = a.createGain();
+      musicGain.gain.value = musicOn ? 0.22 : 0.0; // low: background level
+      musicGain.connect(a.destination);
+    }
+    if (musicTimer === null) {
+      scheduleLoop(a.currentTime + 0.15);
+    }
+  }
+
+  function setMusic(on) {
+    musicOn = on;
+    if (musicGain) {
+      const a = audio();
+      musicGain.gain.setTargetAtTime(on ? 0.22 : 0.0, a.currentTime, 0.05);
+    }
+    if (on && musicTimer === null) startMusic();
+  }
+
+
+  // ---------- Game State ----------
+  const STATE = { TITLE: 0, SWING: 1, FLIGHT: 2, OVER: 3, BOUNCE: 4 };
+  let state = STATE.TITLE;
+
+  let score = 0;
+  let bouncesUsed = 0;  // trampoline saves used this run
+  let highScore = loadHigh();
+
+  // Angela: position + velocity (used during flight)
+  const angela = { x: 0, y: 0, vx: 0, vy: 0, rot: 0 };
+
+  // The bar Angela is swinging on
+  let currentBar = null;
+  // The next bar(s) she's aiming for
+  let bars = [];
+
+  let swingAngle = 0;      // radians from vertical (0 = straight down)
+  let swingVel = 0;        // angular velocity
+  let ropeLen = ROPE_BASE;
+
+  // confetti / particles for catches
+  const particles = [];
+
+  function loadHigh() {
+    try { return parseInt(localStorage.getItem("greatTrapezeHigh") || "0", 10) || 0; }
+    catch (e) { return 0; }
+  }
+  function saveHigh(v) {
+    try { localStorage.setItem("greatTrapezeHigh", String(v)); } catch (e) {}
+  }
+
+  // ---------- Bar generation ----------
+  // Difficulty scales with score. Bars hang from the ceiling on a pivot,
+  // and can themselves swing (moving) at higher difficulty.
+  function makeBar(pivotX, opts) {
+    opts = opts || {};
+    const len = ropeLen;
+    const bar = {
+      pivotX: pivotX,
+      pivotY: CEILING_Y,
+      len: len,
+      angle: opts.angle != null ? opts.angle : (Math.random() * 0.8 - 0.4),
+      swings: !!opts.swings,          // does this bar swing on its own?
+      swingAmp: opts.swingAmp || 0,   // how far it swings (radians)
+      swingSpeed: opts.swingSpeed || 1.4, // oscillation rate
+      swingPhase: Math.random() * Math.PI * 2,
+      baseAngle: opts.angle != null ? opts.angle : 0,
+      verticalBob: opts.bob || 0,     // vertical movement amplitude
+      bobPhase: Math.random() * Math.PI * 2,
+      bobSpeed: 1.2 + Math.random() * 0.8
+    };
+    updateBarEnd(bar, 0);
+    return bar;
+  }
+
+  function updateBarEnd(bar, t) {
+    if (bar.swings && bar.swingAmp) {
+      bar.angle = bar.baseAngle + Math.sin(bar.swingPhase + t * bar.swingSpeed) * bar.swingAmp;
+    }
+    const bobOff = bar.verticalBob ? Math.sin(bar.bobPhase + t * bar.bobSpeed) * bar.verticalBob : 0;
+    const py = bar.pivotY + bobOff;
+    bar.endX = bar.pivotX + Math.sin(bar.angle) * bar.len;
+    bar.endY = py + Math.cos(bar.angle) * bar.len;
+    bar.curPivotY = py;
+  }
+
+  function difficulty() {
+    return Math.min(score / 18, 1); // 0 -> 1 over ~18 catches
+  }
+
+  function nextSpacing() {
+    const d = difficulty();
+    return 110 + d * 55 + Math.random() * 25; // 110 -> ~190, matched to the short hop
+  }
+
+  // Build the next bar to the right of a given x
+  function spawnNextBar(fromX) {
+    const d = difficulty();
+    const spacing = nextSpacing();
+    let x = fromX + spacing;
+
+    // Every bar swings, higher and faster. Amplitude/speed ramp gentle -> intense.
+    const swings = true;
+    const swingAmp = 0.28 + d * 0.71;                   // ~16deg -> ~57deg
+    const swingSpeed = 1.2 + d * 2.3 + Math.random() * 0.4; // fast, varied rates
+    // No vertical bob: bars hang from a fixed point so nothing moves up/down past
+    // the mount. They still swing side to side, which is the main challenge.
+    const bob = 0;
+
+    const bar = makeBar(x, {
+      angle: Math.random() * 0.6 - 0.3,
+      swings: swings,
+      swingAmp: swingAmp,
+      swingSpeed: swingSpeed,
+      bob: bob
+    });
+    return bar;
+  }
+
+  // ---------- Game flow ----------
+  function startGame() {
+    score = 0;
+    bouncesUsed = 0;
+    ropeLen = ROPE_BASE;
+    particles.length = 0;
+    bars.length = 0;
+
+    // First bar near left-center; Angela starts swinging on it.
+    currentBar = makeBar(VW * 0.28, { angle: -0.5, swings: false });
+    swingAngle = -1.3;     // big pullback so the swing carries her up and out
+    swingVel = 0;
+    attachToBar(currentBar);
+
+    // Pre-spawn upcoming bars
+    let lastX = currentBar.pivotX;
+    for (let i = 0; i < 3; i++) {
+      const b = spawnNextBar(lastX);
+      bars.push(b);
+      lastX = b.pivotX;
+    }
+
+    cameraX = currentBar.pivotX - VW * 0.28;
+    state = STATE.SWING;
+    titleScreen.classList.add("hidden");
+    gameOverScreen.classList.add("hidden");
+  }
+
+  function attachToBar(bar) {
+    currentBar = bar;
+    ropeLen = bar.len;
+    // place Angela at the bar end and convert any motion into swing
+    swingAngle = bar.angle;
+    swingVel = 0;
+  }
+
+  function release() {
+    if (state !== STATE.SWING) return;
+    // Consistency: every release launches at a FIXED speed in the swing's current
+    // direction. The player controls only the angle (when to let go), not the power,
+    // so each jump carries the same distance and the game feels predictable.
+    // The launch angle is capped so releasing at the very top of the swing still
+    // produces an on-screen arc rather than flinging her off the top.
+    const launchAngle = Math.min(swingAngle, MAX_RELEASE_ANGLE);
+    const px = currentBar.pivotX;
+    const py = currentBar.curPivotY;
+    const ax = px + Math.sin(swingAngle) * ropeLen;
+    const ay = py + Math.cos(swingAngle) * ropeLen;
+    angela.x = ax;
+    angela.y = ay;
+    angela.vx = Math.cos(launchAngle) * LAUNCH_SPEED;
+    angela.vy = -Math.sin(launchAngle) * LAUNCH_SPEED;
+    angela.rot = launchAngle;
+    state = STATE.FLIGHT;
+    sfx.swing();
+  }
+
+  // Score ranks. Thresholds spaced so higher ranks take real persistence to reach.
+  function rankForScore(s) {
+    if (s >= 60) return "Master Acrobat";
+    if (s >= 36) return "Aerialist";
+    if (s >= 15) return "Flyer";
+    return "Novice";
+  }
+
+  // A 1-5 star grade from the run: score sets the base, and flying clean (using
+  // fewer clown saves) bumps it up — so skill is rewarded, not just persistence.
+  function gradeForRun(s, netUsed) {
+    let stars;
+    if (s >= 50) stars = 5;
+    else if (s >= 30) stars = 4;
+    else if (s >= 15) stars = 3;
+    else if (s >= 6) stars = 2;
+    else stars = 1;
+    // reward clean flying: +1 star if you never needed the net (capped at 5)
+    if (netUsed === 0 && s >= 6) stars = Math.min(5, stars + 1);
+    // penalize leaning on every save on a short run
+    if (netUsed >= MAX_BOUNCES && s < 15) stars = Math.max(1, stars - 1);
+    return stars;
+  }
+
+  function flavorForGrade(stars, netUsed) {
+    if (stars >= 5) return netUsed === 0 ? "Flawless! The crowd is on its feet!" : "A show-stopping performance!";
+    if (stars === 4) return "The big top roars with applause!";
+    if (stars === 3) return "A fine flight under the lights.";
+    if (stars === 2) return "A promising young aerialist.";
+    return "A wobbly debut — back to rehearsal!";
+  }
+
+  function gameOver() {
+    state = STATE.OVER;
+    sfx.fall();
+    const isNew = score > highScore;
+    if (isNew) { highScore = score; saveHigh(highScore); }
+    finalScoreEl.textContent = score;
+    finalHighEl.textContent = "High Score: " + highScore;
+    finalRankEl.textContent = rankForScore(score);
+    const stars = gradeForRun(score, bouncesUsed);
+    finalStarsEl.textContent = "\u2605".repeat(stars) + "\u2606".repeat(5 - stars);
+    finalFlavorEl.textContent = flavorForGrade(stars, bouncesUsed);
+    newBestEl.classList.toggle("hidden", !isNew);
+    gameOverScreen.classList.remove("hidden");
+  }
+
+  function onCatch(bar) {
+    score += 1;
+    sfx.catch();
+    burst(bar.endX, bar.endY);
+    attachToBar(bar);
+    // Always wind back to the same launch arc. The game advances rightward, so she
+    // pulls back to -1.3 and swings forward into the next jump — identical setup
+    // every time, which is what makes each jump consistent.
+    swingAngle = -1.3;
+    swingVel = 0;
+  }
+
+  // After a trampoline bounce, snap onto the nearest bar (by horizontal distance)
+  // and resume swinging. This is a rescue, not a catch, so it scores no points.
+  function grabNearestBar() {
+    // Candidate bars: the upcoming ones, plus the current bar she came from.
+    const candidates = currentBar ? [currentBar, ...bars] : bars.slice();
+    if (candidates.length === 0) return; // nothing to grab (shouldn't happen)
+    let best = candidates[0];
+    let bestDx = Math.abs(angela.x - best.pivotX);
+    for (const b of candidates) {
+      const dx = Math.abs(angela.x - b.pivotX);
+      if (dx < bestDx) { bestDx = dx; best = b; }
+    }
+    // If the grabbed bar is one of the upcoming ones, drop the bars before it
+    // and replenish, so the runway ahead stays consistent.
+    const idx = bars.indexOf(best);
+    if (idx >= 0) {
+      bars.splice(0, idx + 1);
+      let lastX = bars.length ? bars[bars.length - 1].pivotX : best.pivotX;
+      while (bars.length < 3) {
+        const nb = spawnNextBar(lastX);
+        bars.push(nb);
+        lastX = nb.pivotX;
+      }
+    }
+    attachToBar(best);
+    swingAngle = -1.3; // wind back to the standard launch arc
+    swingVel = 0;
+    sfx.catch();
+    burst(best.endX, best.endY);
+    state = STATE.SWING;
+  }
+
+  function spawnBounceParticles(x, y) {
+    const colors = ["#f3e6c8", "#e8b34a", "#c0303a"];
+    for (let i = 0; i < 12; i++) {
+      const a = -Math.PI / 2 + (Math.random() - 0.5) * 1.2;
+      const s = 150 + Math.random() * 180;
+      particles.push({
+        x, y,
+        vx: Math.cos(a) * s,
+        vy: Math.sin(a) * s,
+        life: 0.5 + Math.random() * 0.4,
+        max: 0.9,
+        size: 3 + Math.random() * 3,
+        color: colors[(Math.random() * colors.length) | 0]
+      });
+    }
+  }
+
+  // ---------- Particles ----------
+  function burst(x, y) {
+    const colors = ["#e8b34a", "#f7d488", "#b3232f", "#f3e6c8"];
+    for (let i = 0; i < 16; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const s = 120 + Math.random() * 220;
+      particles.push({
+        x, y,
+        vx: Math.cos(a) * s,
+        vy: Math.sin(a) * s - 60,
+        life: 0.7 + Math.random() * 0.5,
+        max: 1.2,
+        size: 3 + Math.random() * 4,
+        color: colors[(Math.random() * colors.length) | 0]
+      });
+    }
+  }
+
+  // ---------- Camera ----------
+  let cameraX = 0;
+
+  // ---------- Update ----------
+  let last = performance.now();
+  function loop(now) {
+    let dt = (now - last) / 1000;
+    last = now;
+    if (dt > 0.05) dt = 0.05; // clamp on tab switches
+    update(dt);
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  let worldTime = 0;
+  function update(dt) {
+    worldTime += dt;
+    updatePerformers(dt);
+
+    // Animate upcoming bars' own swinging / bobbing (driven oscillation).
+    // The bar Angela holds is controlled by her swing, not its own motion.
+    for (const b of bars) {
+      updateBarEnd(b, worldTime);
+    }
+    if (currentBar) {
+      // While held, the bar follows Angela's swing rather than oscillating itself.
+      currentBar.swings = false;
+      currentBar.angle = (state === STATE.SWING) ? swingAngle : currentBar.angle;
+      updateBarEnd(currentBar, worldTime);
+    }
+
+    if (state === STATE.SWING) {
+      // Pendulum motion for Angela's current bar
+      const acc = -(GRAVITY / ropeLen) * Math.sin(swingAngle);
+      swingVel += acc * dt;
+      swingVel *= 0.9995; // very light damping
+      swingAngle += swingVel * dt;
+
+      // camera follows
+      followCamera(currentBar.pivotX, dt);
+    }
+    else if (state === STATE.FLIGHT) {
+      angela.vy += FLIGHT_GRAVITY * dt;
+      angela.x += angela.vx * dt;
+      angela.y += angela.vy * dt;
+      // rotate Angela to face travel direction-ish
+      angela.rot = Math.atan2(angela.vy, angela.vx) - Math.PI / 2;
+
+      // camera follows Angela
+      followCamera(angela.x, dt);
+
+      // Catch detection against upcoming bars
+      for (let i = 0; i < bars.length; i++) {
+        const b = bars[i];
+        const dx = angela.x - b.endX;
+        const dy = angela.y - b.endY;
+        if (dx * dx + dy * dy <= CATCH_RADIUS * CATCH_RADIUS) {
+          // caught! remove bars up to and including this one, spawn new
+          const removed = bars.splice(0, i + 1);
+          onCatch(b);
+          // replenish so there are always ~3 ahead
+          let lastX = bars.length ? bars[bars.length - 1].pivotX : b.pivotX;
+          while (bars.length < 3) {
+            const nb = spawnNextBar(lastX);
+            bars.push(nb);
+            lastX = nb.pivotX;
+          }
+          state = STATE.SWING;
+          break;
+        }
+      }
+
+      // Trampoline: the clowns hold a bouncy blanket and slide under Angela to catch
+      // her. It saves her up to MAX_BOUNCES times; after that she falls and the run ends.
+      if (state === STATE.FLIGHT) {
+        if (angela.y >= TRAMP_Y) {
+          if (bouncesUsed < MAX_BOUNCES) {
+            bouncesUsed++;
+            angela.y = TRAMP_Y;
+            angela.vy = -BOUNCE_SPEED;            // launch straight up
+            angela.vx = 0;                        // no drift -> predictable apex grab
+            state = STATE.BOUNCE;
+            sfx.swing();
+            spawnBounceParticles(angela.x, TRAMP_Y);
+          } else if (angela.y > FLOOR_Y + 60) {
+            // out of bounces -> fall to the ground and end the run
+            gameOver();
+          }
+        }
+      }
+    }
+    else if (state === STATE.BOUNCE) {
+      // Rising off the trampoline. Keep applying gravity; when she reaches the apex
+      // (starts falling again) snap her onto the nearest bar and resume swinging.
+      angela.vy += FLIGHT_GRAVITY * dt;
+      angela.y += angela.vy * dt;
+      angela.rot = 0;
+      followCamera(angela.x, dt);
+
+      if (angela.vy >= 0) {
+        // apex reached -> auto-grab the nearest bar
+        grabNearestBar();
+      }
+      // Safety: if she comes back down onto the blanket again, bounce once more
+      if (state === STATE.BOUNCE && angela.y >= TRAMP_Y && angela.vy > 0) {
+        angela.y = TRAMP_Y;
+        angela.vy = -BOUNCE_SPEED;
+        sfx.swing();
+        spawnBounceParticles(angela.x, TRAMP_Y);
+      }
+    }
+
+    // particles
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.life -= dt;
+      if (p.life <= 0) { particles.splice(i, 1); continue; }
+      p.vy += 400 * dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+    }
+  }
+
+  function followCamera(targetX, dt) {
+    const want = targetX - VW * 0.32;
+    cameraX += (want - cameraX) * Math.min(1, dt * 4);
+  }
+
+  // ---------- Render ----------
+  function render() {
+    ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const cssW = canvas.width / dpr, cssH = canvas.height / dpr;
+    ctx.scale(cssW / VW, cssH / VH);
+
+    drawBackground();
+
+    ctx.save();
+    ctx.translate(-cameraX, 0);
+
+    drawFloorLights();
+
+    // Draw upcoming bars
+    for (const b of bars) drawBar(b, false);
+    // Draw current bar (highlighted) + Angela on it
+    if (currentBar) drawBar(currentBar, true);
+
+    // the trampoline (the clowns with their blanket) — only present while she still
+    // has catches left; once they're used up, the clowns clear out.
+    if (bouncesUsed < MAX_BOUNCES || state === STATE.BOUNCE) {
+      drawTrampoline();
+    }
+
+    // Angela
+    if (state === STATE.SWING && currentBar) {
+      const ax = currentBar.pivotX + Math.sin(swingAngle) * ropeLen;
+      const ay = currentBar.curPivotY + Math.cos(swingAngle) * ropeLen;
+      drawAngela(ax, ay, swingAngle, true);
+    } else if (state === STATE.FLIGHT || state === STATE.BOUNCE) {
+      drawAngela(angela.x, angela.y, angela.rot, false);
+    } else if (state === STATE.OVER) {
+      drawAngela(angela.x, angela.y, angela.rot, false);
+    }
+
+    // particles
+    for (const p of particles) {
+      ctx.globalAlpha = Math.max(0, p.life / p.max);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+    }
+    ctx.globalAlpha = 1;
+
+    ctx.restore(); // camera
+
+    // Performers parade along the bottom in screen space (always visible).
+    drawPerformers();
+
+    drawHUD();
+    ctx.restore();
+  }
+
+  function drawBackground() {
+    // Tent interior: vertical gradient + radial stripes from the top center
+    const g = ctx.createLinearGradient(0, 0, 0, VH);
+    g.addColorStop(0, "#2a151b");
+    g.addColorStop(0.5, "#1f0f14");
+    g.addColorStop(1, "#150a0e");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, VW, VH);
+
+    // Big-top radial stripes from apex
+    const apexX = VW / 2, apexY = -40;
+    const stripes = 18;
+    for (let i = 0; i < stripes; i++) {
+      const a0 = (i / stripes) * Math.PI;
+      const a1 = ((i + 1) / stripes) * Math.PI;
+      if (i % 2 === 0) {
+        ctx.beginPath();
+        ctx.moveTo(apexX, apexY);
+        ctx.lineTo(apexX + Math.cos(a0) * 1400, apexY + Math.sin(a0) * 1400);
+        ctx.lineTo(apexX + Math.cos(a1) * 1400, apexY + Math.sin(a1) * 1400);
+        ctx.closePath();
+        ctx.fillStyle = "rgba(125,20,29,0.18)";
+        ctx.fill();
+      }
+    }
+
+    // Vignette
+    const v = ctx.createRadialGradient(VW/2, VH/2, VH*0.3, VW/2, VH/2, VH*0.8);
+    v.addColorStop(0, "rgba(0,0,0,0)");
+    v.addColorStop(1, "rgba(0,0,0,0.55)");
+    ctx.fillStyle = v;
+    ctx.fillRect(0, 0, VW, VH);
+  }
+
+  function drawTrampoline() {
+    // A bouncy blanket held by two clowns. It rests at screen-center but slides under
+    // Angela while she's falling toward it / bouncing, so the clowns "catch" her.
+    const centerX = cameraX + VW / 2;
+    let padX = centerX;
+    if ((state === STATE.FLIGHT && angela.y > TRAMP_Y - 220) || state === STATE.BOUNCE) {
+      padX = angela.x;
+    }
+    const y = TRAMP_Y;
+    const half = TRAMP_W / 2;
+
+    // springy dip when she's pressing into the blanket
+    let dip = 0;
+    if (state === STATE.BOUNCE && angela.y > y - 30) dip = 18;
+
+    const leftX = padX - half, rightX = padX + half;
+
+    // ---- the blanket (held taut between the clowns' hands at each end) ----
+    const handY = y;
+    // underside / shadow
+    ctx.strokeStyle = "rgba(125,20,29,0.6)";
+    ctx.lineWidth = 9;
+    ctx.beginPath();
+    ctx.moveTo(leftX, handY);
+    ctx.quadraticCurveTo(padX, handY + dip + 4, rightX, handY);
+    ctx.stroke();
+    // bright blanket top
+    ctx.strokeStyle = "#27c4c4";
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.moveTo(leftX, handY);
+    ctx.quadraticCurveTo(padX, handY + dip, rightX, handY);
+    ctx.stroke();
+    // white highlight + stripes for a circus blanket look
+    ctx.strokeStyle = "#a8f0f0";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(leftX + 6, handY - 3);
+    ctx.quadraticCurveTo(padX, handY - 3 + dip, rightX - 6, handY - 3);
+    ctx.stroke();
+    // glow to keep it visible
+    ctx.save();
+    ctx.shadowColor = "rgba(39,196,196,0.8)";
+    ctx.shadowBlur = 14;
+    ctx.strokeStyle = "#27c4c4";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(leftX, handY);
+    ctx.quadraticCurveTo(padX, handY + dip, rightX, handY);
+    ctx.stroke();
+    ctx.restore();
+
+    // ---- a clown at each end, gripping the blanket and looking up ----
+    const bob = Math.sin(worldTime * 4) * 1.5; // little eager bob
+    drawCatcherClown(leftX, y, 1, bob);   // left clown faces right (toward blanket)
+    drawCatcherClown(rightX, y, -1, bob); // right clown faces left
+  }
+
+  // A clown standing on the ground, arms up holding the blanket edge at (handX, handY).
+  // facing = +1 means body is to the left of its hands (reaching right), -1 mirrors it.
+  function drawCatcherClown(handX, handY, facing, bob) {
+    ctx.save();
+    ctx.translate(handX, FLOOR_Y);        // feet on the floor
+    ctx.scale(facing, 1);
+    const suit = "#c0303a", face = "#f6d9c0", hair = "#e8b34a";
+    const headTop = -(FLOOR_Y - handY) - 6; // so hands reach up to the blanket height
+    const bodyTopY = headTop + 14 + bob;
+
+    // body (stands just inboard of its hands)
+    const bx = -10; // body offset away from the blanket edge
+    ctx.fillStyle = suit;
+    ctx.beginPath();
+    ctx.moveTo(bx - 7, 0); ctx.lineTo(bx - 5, bodyTopY); ctx.lineTo(bx + 5, bodyTopY); ctx.lineTo(bx + 7, 0);
+    ctx.closePath(); ctx.fill();
+    // head
+    ctx.fillStyle = face;
+    ctx.beginPath(); ctx.arc(bx, bodyTopY - 6, 6, 0, Math.PI * 2); ctx.fill();
+    // hair tufts + nose
+    ctx.fillStyle = hair;
+    ctx.beginPath(); ctx.arc(bx - 6, bodyTopY - 7, 2.5, 0, Math.PI*2); ctx.arc(bx + 6, bodyTopY - 7, 2.5, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = "#e23"; ctx.beginPath(); ctx.arc(bx, bodyTopY - 4, 1.8, 0, Math.PI*2); ctx.fill();
+    // arms reaching up/out to grip the blanket edge at (0, handY-FLOOR_Y)
+    const handLocalY = handY - FLOOR_Y;
+    ctx.strokeStyle = suit; ctx.lineWidth = 3; ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(bx + 4, bodyTopY + 4); ctx.lineTo(0, handLocalY);
+    ctx.moveTo(bx - 2, bodyTopY + 4); ctx.lineTo(-2, handLocalY + 3);
+    ctx.stroke();
+    // little hands
+    ctx.fillStyle = face;
+    ctx.beginPath(); ctx.arc(0, handLocalY, 2.4, 0, Math.PI*2); ctx.fill();
+    // legs
+    ctx.strokeStyle = suit; ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(bx - 2, bodyTopY + 16); ctx.lineTo(bx - 5, 0);
+    ctx.moveTo(bx + 2, bodyTopY + 16); ctx.lineTo(bx + 5, 0);
+    ctx.stroke();
+    ctx.lineCap = "butt";
+    ctx.restore();
+  }
+
+  function drawFloorLights() {
+    // Safety net / floor line spanning the visible world
+    const left = cameraX - 100;
+    const right = cameraX + VW + 100;
+
+    // glow line
+    ctx.strokeStyle = "rgba(232,179,74,0.25)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(left, FLOOR_Y);
+    ctx.lineTo(right, FLOOR_Y);
+    ctx.stroke();
+
+    // net hatching
+    ctx.strokeStyle = "rgba(243,230,200,0.12)";
+    ctx.lineWidth = 1;
+    const step = 26;
+    const startX = Math.floor(left / step) * step;
+    ctx.beginPath();
+    for (let x = startX; x < right; x += step) {
+      ctx.moveTo(x, FLOOR_Y);
+      ctx.lineTo(x + 18, VH);
+      ctx.moveTo(x, FLOOR_Y);
+      ctx.lineTo(x - 18, VH);
+    }
+    ctx.stroke();
+  }
+
+  // ---------- Performers parading along the bottom ----------
+  // Drawn in SCREEN space (not the scrolling world) so they're always visible.
+  const PERF_Y = VH - 18;          // ground line for the parade
+  const performers = [];
+  function initPerformers() {
+    performers.length = 0;
+    const kinds = ["ringmaster", "tiger", "lion", "clown", "tiger", "clown", "lion"];
+    const n = kinds.length;
+    for (let i = 0; i < n; i++) {
+      const dir = Math.random() < 0.5 ? 1 : -1;
+      performers.push({
+        kind: kinds[i],
+        x: (VW / n) * i + Math.random() * 60,
+        dir,
+        speed: 28 + Math.random() * 34,   // px/s
+        phase: Math.random() * Math.PI * 2,
+        scale: 0.9 + Math.random() * 0.35
+      });
+    }
+  }
+  function updatePerformers(dt) {
+    for (const p of performers) {
+      p.x += p.dir * p.speed * dt;
+      p.phase += dt * (p.speed / 10);
+      const margin = 40;
+      if (p.x < margin) { p.x = margin; p.dir = 1; }
+      else if (p.x > VW - margin) { p.x = VW - margin; p.dir = -1; }
+    }
+  }
+  function drawPerformers() {
+    for (const p of performers) {
+      ctx.save();
+      ctx.translate(p.x, PERF_Y);
+      ctx.scale(p.dir * p.scale, p.scale);
+      const step = Math.sin(p.phase) * 3; // leg/body bob
+      if (p.kind === "tiger") drawTiger(step);
+      else if (p.kind === "lion") drawLion(step);
+      else if (p.kind === "ringmaster") drawRingmaster(step);
+      else drawClown(step);
+      ctx.restore();
+    }
+  }
+
+  // Each performer is drawn with its feet at y=0, facing +x. Simple geometric
+  // silhouettes matching the poster art direction.
+  function legWiggle(step, bodyColor) {
+    ctx.strokeStyle = bodyColor;
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(-8, -10); ctx.lineTo(-8 + step, 0);
+    ctx.moveTo(8, -10); ctx.lineTo(8 - step, 0);
+    ctx.stroke();
+    ctx.lineCap = "butt";
+  }
+
+  function drawTiger(step) {
+    const body = "#e08a2e", dark = "#7a3d12";
+    // body
+    ctx.fillStyle = body;
+    ctx.beginPath();
+    ctx.ellipse(0, -20, 18, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // head
+    ctx.beginPath();
+    ctx.ellipse(18, -24, 8, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // ears
+    ctx.beginPath(); ctx.moveTo(14, -31); ctx.lineTo(17, -36); ctx.lineTo(20, -31); ctx.fill();
+    // tail
+    ctx.strokeStyle = body; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(-18, -22); ctx.quadraticCurveTo(-30, -26, -28, -34); ctx.stroke();
+    // stripes
+    ctx.strokeStyle = dark; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-8, -28); ctx.lineTo(-8, -12);
+    ctx.moveTo(-1, -29); ctx.lineTo(-1, -11);
+    ctx.moveTo(6, -28); ctx.lineTo(6, -12);
+    ctx.stroke();
+    legWiggle(step, body);
+  }
+
+  function drawLion(step) {
+    const mane = "#9c6b22";
+    const col = "#cfa15a";
+    // body
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.ellipse(0, -20, 18, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // mane (ring of triangles)
+    ctx.fillStyle = mane;
+    ctx.beginPath();
+    ctx.arc(18, -23, 11, 0, Math.PI * 2);
+    ctx.fill();
+    // head
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.arc(19, -23, 6.5, 0, Math.PI * 2);
+    ctx.fill();
+    // tail with tuft
+    ctx.strokeStyle = col; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(-18, -22); ctx.quadraticCurveTo(-30, -24, -29, -33); ctx.stroke();
+    ctx.fillStyle = mane;
+    ctx.beginPath(); ctx.arc(-29, -34, 3, 0, Math.PI * 2); ctx.fill();
+    legWiggle(step, col);
+  }
+
+  function drawClown(step) {
+    const suit = "#c0303a", accent = "#f3e6c8", face = "#f6d9c0", hair = "#e8b34a";
+    // body / suit
+    ctx.fillStyle = suit;
+    ctx.beginPath();
+    ctx.moveTo(-10, 0); ctx.lineTo(-6, -22); ctx.lineTo(6, -22); ctx.lineTo(10, 0); ctx.closePath();
+    ctx.fill();
+    // buttons
+    ctx.fillStyle = accent;
+    ctx.beginPath(); ctx.arc(0, -8, 1.8, 0, Math.PI*2); ctx.arc(0, -15, 1.8, 0, Math.PI*2); ctx.fill();
+    // head
+    ctx.fillStyle = face;
+    ctx.beginPath(); ctx.arc(0, -29, 7, 0, Math.PI * 2); ctx.fill();
+    // hair tufts
+    ctx.fillStyle = hair;
+    ctx.beginPath(); ctx.arc(-7, -30, 3, 0, Math.PI*2); ctx.arc(7, -30, 3, 0, Math.PI*2); ctx.fill();
+    // nose
+    ctx.fillStyle = "#e23"; ctx.beginPath(); ctx.arc(0, -28, 2, 0, Math.PI*2); ctx.fill();
+    // hat
+    ctx.fillStyle = suit;
+    ctx.beginPath(); ctx.moveTo(-6, -34); ctx.lineTo(0, -44); ctx.lineTo(6, -34); ctx.closePath(); ctx.fill();
+    // arms
+    ctx.strokeStyle = suit; ctx.lineWidth = 3; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(-6, -18); ctx.lineTo(-12, -12); ctx.moveTo(6, -18); ctx.lineTo(12, -12); ctx.stroke();
+    // legs (wiggle as it walks)
+    ctx.beginPath();
+    ctx.moveTo(-5, -2); ctx.lineTo(-5 - step, 0);
+    ctx.moveTo(5, -2); ctx.lineTo(5 + step, 0);
+    ctx.stroke();
+    ctx.lineCap = "butt";
+  }
+
+  function drawRingmaster(step) {
+    const coat = "#b3232f", trim = "#e8b34a", shirt = "#f3e6c8";
+    const face = "#f6d9c0", hat = "#231a1f";
+    // tailcoat body (a bit taller than the others)
+    ctx.fillStyle = coat;
+    ctx.beginPath();
+    ctx.moveTo(-9, 0); ctx.lineTo(-7, -26); ctx.lineTo(7, -26); ctx.lineTo(9, 0); ctx.closePath();
+    ctx.fill();
+    // coat tails
+    ctx.beginPath();
+    ctx.moveTo(-9, 0); ctx.lineTo(-4, -10); ctx.lineTo(-2, 0); ctx.closePath();
+    ctx.moveTo(9, 0); ctx.lineTo(4, -10); ctx.lineTo(2, 0); ctx.closePath();
+    ctx.fill();
+    // white shirt front
+    ctx.fillStyle = shirt;
+    ctx.beginPath();
+    ctx.moveTo(-3, -26); ctx.lineTo(3, -26); ctx.lineTo(2, -8); ctx.lineTo(-2, -8); ctx.closePath();
+    ctx.fill();
+    // gold trim buttons / sash
+    ctx.fillStyle = trim;
+    ctx.beginPath(); ctx.arc(0, -12, 1.6, 0, Math.PI*2); ctx.arc(0, -18, 1.6, 0, Math.PI*2); ctx.fill();
+    // gold collar line
+    ctx.strokeStyle = trim; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-7, -25); ctx.lineTo(-3, -26); ctx.moveTo(7, -25); ctx.lineTo(3, -26); ctx.stroke();
+    // head
+    ctx.fillStyle = face;
+    ctx.beginPath(); ctx.arc(0, -33, 6.5, 0, Math.PI * 2); ctx.fill();
+    // top hat
+    ctx.fillStyle = hat;
+    ctx.fillRect(-7, -41, 14, 3);      // brim
+    ctx.fillRect(-5, -52, 10, 11);     // crown
+    ctx.fillStyle = coat;              // red hat band
+    ctx.fillRect(-5, -43, 10, 2);
+    // raised baton arm (front) + resting arm (back)
+    ctx.strokeStyle = coat; ctx.lineWidth = 3; ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(6, -22); ctx.lineTo(15, -30);   // raised arm
+    ctx.moveTo(-6, -22); ctx.lineTo(-12, -16); // other arm
+    ctx.stroke();
+    // baton/whip in raised hand
+    ctx.strokeStyle = trim; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(15, -30); ctx.lineTo(24, -34); ctx.stroke();
+    // legs (wiggle as it walks)
+    ctx.strokeStyle = hat; ctx.lineWidth = 3; ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(-4, -2); ctx.lineTo(-4 - step, 0);
+    ctx.moveTo(4, -2); ctx.lineTo(4 + step, 0);
+    ctx.stroke();
+    ctx.lineCap = "butt";
+  }
+
+  function drawBar(bar, isCurrent) {
+    const px = bar.pivotX, py = bar.curPivotY;
+    const ex = bar.endX, ey = bar.endY;
+
+    // ropes (drawn first; the mount beam below will mask their tops)
+    ctx.strokeStyle = isCurrent ? "rgba(247,212,136,0.9)" : "rgba(243,230,200,0.5)";
+    ctx.lineWidth = 2;
+    const perp = bar.angle;
+    const halfBar = 22;
+    const bx = ex + Math.cos(perp) * halfBar;
+    const by = ey - Math.sin(perp) * halfBar;
+    const cx = ex - Math.cos(perp) * halfBar;
+    const cy = ey + Math.sin(perp) * halfBar;
+    ctx.beginPath();
+    ctx.moveTo(px, py); ctx.lineTo(bx, by);
+    ctx.moveTo(px, py); ctx.lineTo(cx, cy);
+    ctx.stroke();
+
+    // the bar itself
+    ctx.strokeStyle = isCurrent ? "#f7d488" : "#e8b34a";
+    ctx.lineWidth = isCurrent ? 6 : 5;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(bx, by); ctx.lineTo(cx, cy);
+    ctx.stroke();
+
+    if (isCurrent) {
+      ctx.save();
+      ctx.shadowColor = "rgba(247,212,136,0.7)";
+      ctx.shadowBlur = 14;
+      ctx.beginPath();
+      ctx.moveTo(bx, by); ctx.lineTo(cx, cy);
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.lineCap = "butt";
+
+    // ceiling mount: a tall, wide beam drawn LAST so it covers the pivot's full
+    // vertical travel (bars bob up to ~60px). The rope tops disappear behind it,
+    // hiding the up/down motion entirely.
+    const MOUNT_W = 44;
+    const MOUNT_TOP = -10;               // above the visible top edge
+    const MOUNT_BOTTOM = CEILING_Y + 8;  // below the lowest pivot rest point
+    ctx.fillStyle = "rgba(60,30,36,0.98)";
+    ctx.fillRect(px - MOUNT_W / 2, MOUNT_TOP, MOUNT_W, MOUNT_BOTTOM - MOUNT_TOP);
+    // gold trim on the beam's lower face
+    ctx.fillStyle = "rgba(232,179,74,0.6)";
+    ctx.fillRect(px - MOUNT_W / 2, MOUNT_BOTTOM - 6, MOUNT_W, 6);
+  }
+
+  function drawAngela(x, y, rot, holding) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+
+    // She hangs/extends downward from the bar point (origin = hands)
+    ctx.fillStyle = "#f3e6c8";
+    ctx.strokeStyle = "#f3e6c8";
+    ctx.lineWidth = 5;
+    ctx.lineCap = "round";
+
+    // arms up to bar (origin)
+    // body
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, 34);     // torso
+    ctx.stroke();
+
+    // head
+    ctx.beginPath();
+    ctx.arc(0, -6, 8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // arms (reaching up to hold)
+    ctx.beginPath();
+    ctx.moveTo(0, 6);
+    ctx.lineTo(-10, -6);
+    ctx.moveTo(0, 6);
+    ctx.lineTo(10, -6);
+    ctx.stroke();
+
+    // legs — pose depends on swing vs flight
+    ctx.beginPath();
+    if (holding) {
+      ctx.moveTo(0, 34); ctx.lineTo(-12, 56);
+      ctx.moveTo(0, 34); ctx.lineTo(12, 56);
+    } else {
+      // tucked / flying pose
+      ctx.moveTo(0, 34); ctx.lineTo(-16, 48);
+      ctx.moveTo(0, 34); ctx.lineTo(14, 50);
+    }
+    ctx.stroke();
+
+    // little red sash for flair
+    ctx.strokeStyle = "#b3232f";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(-6, 20); ctx.lineTo(6, 26);
+    ctx.stroke();
+
+    ctx.restore();
+    ctx.lineCap = "butt";
+  }
+
+  function drawHUD() {
+    ctx.fillStyle = "#f3e6c8";
+    ctx.textBaseline = "top";
+    ctx.font = "600 26px Georgia, serif";
+    ctx.fillText("Score  " + score, 24, 22);
+
+    // current rank, just under the score
+    ctx.font = "italic 15px Georgia, serif";
+    ctx.fillStyle = "rgba(179,35,47,0.95)";
+    ctx.fillText(rankForScore(score), 24, 52);
+
+    ctx.font = "16px Georgia, serif";
+    ctx.fillStyle = "rgba(243,230,200,0.7)";
+    ctx.fillText("High  " + highScore, 24, 76);
+
+    // trampoline tries remaining (cyan = available, dim = used)
+    const remaining = MAX_BOUNCES - bouncesUsed;
+    ctx.font = "14px Georgia, serif";
+    ctx.fillStyle = "rgba(168,240,240,0.85)";
+    ctx.fillText("Net", 24, 106);
+    for (let i = 0; i < MAX_BOUNCES; i++) {
+      ctx.beginPath();
+      ctx.arc(60 + i * 18, 112, 6, 0, Math.PI * 2);
+      ctx.fillStyle = i < remaining ? "#27c4c4" : "rgba(120,120,120,0.4)";
+      ctx.fill();
+    }
+
+    // music indicator (M to toggle)
+    ctx.textAlign = "right";
+    ctx.font = "14px Georgia, serif";
+    ctx.fillStyle = "rgba(243,230,200,0.55)";
+    ctx.fillText((musicOn ? "\u266a Music: on" : "Music: off") + "  (M)", VW - 24, 26);
+    ctx.textAlign = "left";
+
+    // release hint while swinging
+    if (state === STATE.SWING) {
+      ctx.textAlign = "center";
+      ctx.fillStyle = "rgba(247,212,136,0.85)";
+      ctx.font = "italic 18px Georgia, serif";
+      ctx.fillText("Press Space to release", VW / 2, VH - 36);
+      ctx.textAlign = "left";
+    }
+  }
+
+  // ---------- Input ----------
+  function onSpace() {
+    if (audio() && actx.state === "suspended") actx.resume();
+    startMusic(); // kicks off background music on the first user gesture
+    if (state === STATE.TITLE) { startGame(); return; }
+    if (state === STATE.SWING) { release(); return; }
+  }
+  function onRestart() {
+    startMusic();
+    if (state === STATE.OVER || state === STATE.SWING || state === STATE.FLIGHT) {
+      startGame();
+    }
+  }
+
+  window.addEventListener("keydown", (e) => {
+    if (e.code === "Space") { e.preventDefault(); onSpace(); }
+    else if (e.code === "KeyR") { e.preventDefault(); onRestart(); }
+    else if (e.code === "KeyM") { e.preventDefault(); setMusic(!musicOn); }
+  });
+
+  // Pointer support (helps testing + nudges toward future mobile)
+  canvas.addEventListener("pointerdown", () => {
+    startMusic();
+    if (state === STATE.TITLE) onSpace();
+    else if (state === STATE.SWING) onSpace();
+    else if (state === STATE.OVER) onRestart();
+  });
+  titleScreen.addEventListener("pointerdown", onSpace);
+  gameOverScreen.addEventListener("pointerdown", onRestart);
+
+  // ---------- Go ----------
+  initPerformers();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
